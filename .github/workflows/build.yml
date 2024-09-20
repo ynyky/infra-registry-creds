@@ -28,7 +28,7 @@ jobs:
 
       - name: Build the Docker image
         run: |
-          docker build -t docker push ynyky/infra-registry-creds:${{ env.VERSION }} .
+          docker buildx build -t docker push ynyky/infra-registry-creds:${{ env.VERSION }} .
 
       # - name: Test the Docker image
       #   run: |
