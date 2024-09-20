@@ -1,0 +1,39 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Create version string
+        id: version
+        run: |
+          DATE=$(date +'%Y-%m-%d')
+          COMMIT_SHA=${GITHUB_SHA:0:7}
+          echo "VERSION=${DATE}-${COMMIT_SHA}" >> $GITHUB_ENV
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}"  --password-stdin
+
+      - name: Build the Docker image
+        run: |
+          docker build -t docker push ynyky/infra-registry-creds:${{ env.VERSION }} .
+
+      # - name: Test the Docker image
+      #   run: |
+      #     docker run --rm ynyky/infra-registry-creds:${{ env.VERSION }} echo "something"
+
+      - name: Push the Docker image
+        run: |
+          docker push ynyky/infra-registry-creds:${{ env.VERSION }}
