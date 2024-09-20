@@ -14,7 +14,7 @@ RUN echo 123
 
 FROM ccs-app-base AS ccs-app-code
 COPY Gemfile ./
-COPY Gemfile.lock ./
+#COPY Gemfile.lock ./
 
 RUN bundle install --retry 3
 
