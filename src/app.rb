@@ -14,7 +14,7 @@ secret_name = ENV.fetch('IMAGE_PULL_SECRET_NAME', nil)
 
 def generate_token(access_key_id, secret_access_key, region, assume: nil)
   if assume
-    puts "Assuming role: #{role_arn}"
+    puts "Assuming role: #{assume}"
 
     sts_client = Aws::STS::Client.new(
       region:,
