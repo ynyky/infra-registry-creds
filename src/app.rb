@@ -97,8 +97,9 @@ def create_secretes(token, secret_name)
   end
 end
 
-token = generate_token(access_key_id, secret_access_key, region, assume:)
+
 while true do 
+  token = generate_token(access_key_id, secret_access_key, region, assume:)
   create_secretes(token, secret_name)
   sleep(60)
 end
