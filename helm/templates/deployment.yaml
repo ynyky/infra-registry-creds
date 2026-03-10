@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infra-registry-creds
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: infra-registry-creds
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: infra-registry-creds
+  template:
+    metadata:
+      labels:
+        app: infra-registry-creds
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+
+      containers:
+        - name: infra-registry-creds
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          {{- if .Values.resources }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          {{- end }}
+
+          env:
+          {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: "{{ $value }}"
+          {{- end }}
+
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-secret

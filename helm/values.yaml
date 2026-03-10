@@ -1,0 +1,32 @@
+namespace: kube-system
+
+replicaCount: 1
+
+image:
+  repository: ynyky/infra-registry-creds
+  tag: "2024-09-25-81c04d8"
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  name: registry-creds
+  create: false   # set true if you want Helm to create it
+
+env:  
+  REGION: 'us-east-1'
+  IMAGE_PULL_SECRET_NAME: aws-creds
+
+secretEnv:
+  AWS_ACCESS_KEY: "xxxx"   # base64 encoded value
+  AWS_ACCESS_SECRET: "xxx"   # base64 encoded value
+
+resources: {}
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # limits:
+  #   cpu: 200m
+  #   memory: 256Mi
+
+serviceAccount:
+  name: registry-creds
+  namespace: kube-system
