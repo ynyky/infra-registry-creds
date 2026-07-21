@@ -115,9 +115,15 @@ def create_secretes(token, secret_name, cloud: 'ecr')
   end
 end
 
+def present?(value)
+  !value.nil? && !value.to_s.strip.empty?
+end
 
-aws_enabled = access_key_id && secret_access_key && secret_name
-dhi_enabled = dhi_username && dhi_token && dhi_secret_name
+aws_enabled = present?(access_key_id) && present?(secret_access_key) && present?(secret_name)
+dhi_enabled = present?(dhi_username) && present?(dhi_token) && present?(dhi_secret_name)
+
+@logger.info "Registry providers -> ECR: #{aws_enabled ? 'enabled' : 'disabled'}, " \
+             "DHI: #{dhi_enabled ? 'enabled' : 'disabled'}"
 
 unless aws_enabled || dhi_enabled
   @logger.error 'No registry configured. Set AWS_* + IMAGE_PULL_SECRET_NAME and/or DHI_* + DHI_IMAGE_PULL_SECRET_NAME.'
