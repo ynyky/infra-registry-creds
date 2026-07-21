@@ -11,13 +11,22 @@ serviceAccount:
   name: registry-creds
   create: false   # set true if you want Helm to create it
 
-env:  
+env:
   REGION: 'us-east-1'
   IMAGE_PULL_SECRET_NAME: aws-creds
+  # DHI (Docker Hardened Images / Docker Hub) — leave unset to disable DHI
+  DHI_IMAGE_PULL_SECRET_NAME: dhi-creds
+  # Must match the registry host the images are actually pulled from
+  # (e.g. images like dhi.io/filebeat:9.4.3 -> https://dhi.io), otherwise
+  # kubelet won't match the secret and falls back to anonymous -> 401.
+  DHI_REGISTRY: 'https://dhi.io'
 
 secretEnv:
   AWS_ACCESS_KEY: "xxxx"   # base64 encoded value
   AWS_ACCESS_SECRET: "xxx"   # base64 encoded value
+  # DHI credentials (Docker Hub username + PAT), base64 encoded values
+  DHI_USERNAME: "xxx"
+  DHI_TOKEN: "xxx"
 
 resources: {}
   # requests:

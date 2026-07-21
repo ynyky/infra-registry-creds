@@ -1,4 +1,4 @@
-FROM ruby:3.3.5-bookworm AS ccs-base
+FROM ruby:3.3.12-bookworm AS ccs-base
 
 RUN apt-get update -y && \
     apt-get upgrade -y

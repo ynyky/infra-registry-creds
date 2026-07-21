@@ -12,6 +12,13 @@ assume = ENV['ASSUME'] || nil
 @logger = Logger.new($stdout)
 secret_name = ENV.fetch('IMAGE_PULL_SECRET_NAME', nil)
 
+# DHI (Docker Hardened Images / Docker Hub) config. Unlike ECR the credentials
+# are static (username + PAT), so there is no token to mint.
+dhi_username = ENV.fetch('DHI_USERNAME', nil)
+dhi_token = ENV.fetch('DHI_TOKEN', nil)
+dhi_registry = ENV['DHI_REGISTRY'] || 'https://dhi.io'
+dhi_secret_name = ENV.fetch('DHI_IMAGE_PULL_SECRET_NAME', nil)
+
 def generate_token(access_key_id, secret_access_key, region, assume: nil)
   if assume
     puts "Assuming role: #{assume}"
@@ -56,6 +63,11 @@ def generate_token(access_key_id, secret_access_key, region, assume: nil)
 
   registry_url = auth_data.proxy_endpoint
 
+  build_dockerconfigjson(registry_url, username, password)
+end
+
+# Build a base64-encoded .dockerconfigjson for a single registry.
+def build_dockerconfigjson(registry_url, username, password)
   docker_config = { 'auths' => {} }
 
   docker_config['auths'][registry_url] = {
@@ -64,7 +76,13 @@ def generate_token(access_key_id, secret_access_key, region, assume: nil)
   Base64.strict_encode64(docker_config.to_json)
 end
 
-def create_secretes(token, secret_name)
+# DHI (Docker Hardened Images / Docker Hub) uses a static username + PAT, so we
+# just wrap them into a .dockerconfigjson — no external call needed.
+def generate_dhi_token(registry_url, username, token)
+  build_dockerconfigjson(registry_url, username, token)
+end
+
+def create_secretes(token, secret_name, cloud: 'ecr')
   client = K8s::Client.in_cluster_config
   namespace_api_call = client.api('v1').resource('namespaces').list
   list_of_namespaces = namespace_api_call.map { |namespace| namespace.metadata.name }
@@ -75,11 +93,11 @@ def create_secretes(token, secret_name)
                                   kind: 'Secret',
                                   metadata: {
                                     namespace:,
-                                    name: secret_name
-                                  },
-                                  labels: {
-                                    app: 'registry-creds',
-                                    cloud: 'ecr'
+                                    name: secret_name,
+                                    labels: {
+                                      app: 'registry-creds',
+                                      cloud:
+                                    }
                                   },
                                   data: {
                                     '.dockerconfigjson': token
@@ -98,8 +116,24 @@ def create_secretes(token, secret_name)
 end
 
 
-while true do 
-  token = generate_token(access_key_id, secret_access_key, region, assume:)
-  create_secretes(token, secret_name)
+aws_enabled = access_key_id && secret_access_key && secret_name
+dhi_enabled = dhi_username && dhi_token && dhi_secret_name
+
+unless aws_enabled || dhi_enabled
+  @logger.error 'No registry configured. Set AWS_* + IMAGE_PULL_SECRET_NAME and/or DHI_* + DHI_IMAGE_PULL_SECRET_NAME.'
+  exit 1
+end
+
+while true do
+  if aws_enabled
+    token = generate_token(access_key_id, secret_access_key, region, assume:)
+    create_secretes(token, secret_name, cloud: 'ecr')
+  end
+
+  if dhi_enabled
+    dhi = generate_dhi_token(dhi_registry, dhi_username, dhi_token)
+    create_secretes(dhi, dhi_secret_name, cloud: 'dhi')
+  end
+
   sleep(60)
 end
